@@ -1,0 +1,15 @@
+version: "0.2"
+language: "en"
+words:
+  - andreas
+  - inplace
+  - nohup
+  - pacman
+  - polybar
+  - remigius
+  - rubygems
+  - shellcheck
+  - statusline
+  - subshell
+  - swiftbar
+  - xbar

@@ -1,0 +1,18 @@
+# Markdownlint configuration
+# See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Default state for all rules
+default: true
+
+# Customize specific rules
+MD013:  # Line length
+  line_length: 120
+  code_blocks: false
+  tables: false
+
+MD033:  # Inline HTML
+  allowed_elements:
+    - details
+    - summary
+
+MD041: false  # First line in file should be a top level heading - disable for flexibility
