@@ -158,11 +158,13 @@ This guide provides detailed step-by-step instructions for installing Claude Usa
    mkdir -p ~/.config/polybar/scripts
    ```
 
-3. **Copy the core script**:
+3. **Copy the scripts**:
 
    ```bash
    cp claude-usage.sh ~/.config/polybar/scripts/
+   cp plugins/polybar/claude-usage-polybar.sh ~/.config/polybar/scripts/
    chmod +x ~/.config/polybar/scripts/claude-usage.sh
+   chmod +x ~/.config/polybar/scripts/claude-usage-polybar.sh
    ```
 
 4. **Install helper script** (optional):
@@ -179,11 +181,18 @@ This guide provides detailed step-by-step instructions for installing Claude Usa
    ```ini
    [module/claude-usage]
    type = custom/script
-   exec = ~/.config/polybar/scripts/claude-usage.sh -o format="Claude: %session_num% | %week_num%"
+   exec = ~/.config/polybar/scripts/claude-usage-polybar.sh
    interval = 30
    label = %output%
-   format-prefix = " "
-   format-prefix-foreground = ${colors.primary}
+   ```
+
+   This uses the wrapper script with click notification support (left/right
+   click shows a summary via `notify-send`).
+
+   For direct usage without click support:
+
+   ```ini
+   exec = ~/.config/polybar/scripts/claude-usage.sh -o format=" %session_num% |  %week_num%"
    ```
 
    Then add `claude-usage` to your bar's modules:

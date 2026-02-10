@@ -117,15 +117,21 @@ details and manual refresh option.
 ```
 
 **Linux Polybar** - Add to `~/.config/polybar/config.ini` (see
-[config-snippet.ini](plugins/polybar/config-snippet.ini) for full example
-with colors):
+[config-snippet.ini](plugins/polybar/config-snippet.ini) for full example):
 
 ```ini
 [module/claude-usage]
 type = custom/script
-exec = /path/to/claude-usage.sh -o format=" Claude: %session_num%"
+exec = /path/to/plugins/polybar/claude-usage-polybar.sh
 interval = 30
 label = %output%
+```
+
+Left/right click shows a summary notification via `notify-send`. For direct
+usage without click support:
+
+```ini
+exec = /path/to/claude-usage.sh -o format=" %session_num% |  %week_num%"
 ```
 
 **Starship prompt** - Add to `starship.toml`:
