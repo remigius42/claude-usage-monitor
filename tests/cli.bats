@@ -90,20 +90,16 @@ burn_rate_message=""
 session_hours_remaining="3.0"
 week_hours_remaining="120.0"
 EOF
-    touch "$CACHE_FILE"  # Fresh timestamp
+    touch "$CACHE_FILE"  # Fresh timestamp — no background refresh triggered
 
-    # Mock background refresh to avoid spawning
-    maybe_trigger_background_refresh() { :; }
-
-    # Run with SWIFTBAR=1 only (no -c flag) - should read cache
-    result=$(format_swiftbar)
+    # Run the actual script with SWIFTBAR=1 (no -c flag)
+    run env SWIFTBAR=1 "$PROJECT_DIR/claude-usage.sh"
+    [ "$status" -eq 0 ]
 
     # Should show actual data, not loading indicator
-    echo "$result" | grep -q "42%"
-    run grep -q "⏳" <<< "$result"
-    [ "$status" -ne 0 ]
-    run grep -q "Loading" <<< "$result"
-    [ "$status" -ne 0 ]
+    [[ "$output" == *"42%"* ]]
+    [[ "$output" != *"⏳"* ]]
+    [[ "$output" != *"Loading"* ]]
 
     rm -f "$CACHE_FILE"
 }
