@@ -92,8 +92,8 @@ esac
 session=$("$CLAUDE_USAGE_SH" -o format="%session_num%")
 week=$("$CLAUDE_USAGE_SH" -o format="%week_num%")
 
-# Handle loading/error states (single character output)
-if [[ ${#session} -le 2 ]]; then
+# Handle loading/error states (non-percentage output like ⏳, ?, ⚠️)
+if [[ ! "$session" =~ ^[0-9]+%$ ]]; then
     echo "$session"
     exit 0
 fi
