@@ -1,6 +1,6 @@
 # Manual Installation Guide
 
-<!-- spellchecker: words elif killall pgrep yourname -->
+<!-- spellchecker: words elif killall libnotify pango pgrep yourname -->
 
 This guide provides detailed step-by-step instructions for installing Claude Usage Monitor without Homebrew.
 
@@ -8,6 +8,7 @@ This guide provides detailed step-by-step instructions for installing Claude Usa
 
 - [macOS Installation (SwiftBar)](#macos-installation-swiftbar)
 - [Linux Installation (Polybar)](#linux-installation-polybar)
+- [Linux Installation (i3blocks)](#linux-installation-i3blocks)
 - [Configuration](#configuration)
 - [Testing](#testing)
 
@@ -230,6 +231,129 @@ This guide provides detailed step-by-step instructions for installing Claude Usa
 
    # Launch Polybar
    polybar example &
+   ```
+
+---
+
+## Linux Installation (i3blocks)
+
+### i3blocks Prerequisites
+
+1. **Install i3blocks**:
+
+   ```bash
+   # Arch Linux / EndeavourOS
+   sudo pacman -S i3blocks
+
+   # Ubuntu/Debian
+   sudo apt install i3blocks
+
+   # Fedora
+   sudo dnf install i3blocks
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+   # Arch
+   sudo pacman -S tmux jq libnotify
+
+   # Ubuntu/Debian
+   sudo apt install tmux jq libnotify-bin
+
+   # Fedora
+   sudo dnf install tmux jq libnotify
+   ```
+
+3. **Install and authenticate Claude CLI**:
+
+   ```bash
+   # Download from https://claude.com/download
+   claude auth login
+   ```
+
+### i3blocks Installation Steps
+
+1. **Download the repository**:
+
+   ```bash
+   git clone https://github.com/remigius42/claude-usage-monitor.git
+   cd claude-usage-monitor
+   ```
+
+2. **Create scripts directory**:
+
+   ```bash
+   mkdir -p ~/.config/i3blocks/scripts
+   ```
+
+3. **Copy the scripts**:
+
+   ```bash
+   cp claude-usage.sh ~/.config/i3blocks/scripts/
+   cp plugins/i3blocks/claude-usage-i3blocks.sh ~/.config/i3blocks/scripts/
+   chmod +x ~/.config/i3blocks/scripts/claude-usage.sh
+   chmod +x ~/.config/i3blocks/scripts/claude-usage-i3blocks.sh
+   ```
+
+4. **Install helper script** (optional):
+
+   ```bash
+   sudo cp scripts/configure-claude-json.sh /usr/local/bin/
+   sudo chmod +x /usr/local/bin/configure-claude-json.sh
+   ```
+
+5. **Configure i3blocks**:
+
+   Add to `~/.config/i3blocks/config`:
+
+   **Simple mode** (single color for entire line, works out-of-box):
+
+   ```ini
+   [claude-usage]
+   command=~/.config/i3blocks/scripts/claude-usage-i3blocks.sh
+   interval=30
+   ```
+
+   **Pango mode** (per-value colors like Polybar):
+
+   ```ini
+   [claude-usage]
+   command=I3BLOCKS_PANGO=1 ~/.config/i3blocks/scripts/claude-usage-i3blocks.sh
+   interval=30
+   markup=pango
+   ```
+
+   Left/right click shows a summary notification via `notify-send`.
+
+   For direct usage without click support:
+
+   ```ini
+   command=~/.config/i3blocks/scripts/claude-usage.sh -o format=" %session_num% |  %week_num%"
+   ```
+
+6. **Configure ~/.claude.json**:
+
+   ```bash
+   configure-claude-json.sh ~/.config/i3blocks/scripts
+   # OR manually add to ~/.claude.json:
+   ```
+
+   Add this entry:
+
+   ```json
+   {
+     "/home/yourname/.config/i3blocks/scripts": {
+       "hasTrustDialogAccepted": true
+     }
+   }
+   ```
+
+7. **Restart i3**:
+
+   ```bash
+   # Reload i3 config (usually Mod+Shift+R)
+   i3-msg reload
    ```
 
 ---

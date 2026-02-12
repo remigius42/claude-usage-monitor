@@ -2,14 +2,18 @@
 
 # spellchecker: ignore rrggbb
 
-# Polybar wrapper for Claude Usage Monitor
-# Displays usage with Nerd Font icons, dynamic colors, and click notifications
+# i3blocks wrapper for Claude Usage Monitor
+# Displays usage with icons, dynamic colors, and click notifications
 #
-# Usage: claude-usage-polybar.sh
+# Usage: claude-usage-i3blocks.sh
 #
-# Click behavior (via Polybar BUTTON env var):
+# Click behavior (via i3blocks BLOCK_BUTTON env var):
 #   Left click (1):  Show summary notification
 #   Right click (3): Show summary notification
+#
+# Environment variables:
+#   I3BLOCKS_PANGO=1  Enable Pango markup for per-value colors
+#                     (requires markup=pango in i3blocks config)
 
 set -euo pipefail
 
@@ -28,7 +32,6 @@ else
 fi
 
 # Color thresholds (matches SwiftBar behavior)
-# Colors are Polybar format: %{F#rrggbb}text%{F-}
 COLOR_GREEN="#98c379"
 COLOR_ORANGE="#e5c07b"
 COLOR_RED="#e06c75"
@@ -59,12 +62,28 @@ get_color() {
     fi
 }
 
-# Wrap text in Polybar color tags
-colorize() {
+# Returns the "worst" (highest severity) color for simple mode
+get_worst_color() {
+    local color1="$1"
+    local color2="$2"
+    # Priority: red > orange > green > empty
+    if [[ "$color1" == "$COLOR_RED" || "$color2" == "$COLOR_RED" ]]; then
+        echo "$COLOR_RED"
+    elif [[ "$color1" == "$COLOR_ORANGE" || "$color2" == "$COLOR_ORANGE" ]]; then
+        echo "$COLOR_ORANGE"
+    elif [[ -n "$color1" || -n "$color2" ]]; then
+        echo "$COLOR_GREEN"
+    else
+        echo ""
+    fi
+}
+
+# Wrap text in Pango span tags (for I3BLOCKS_PANGO=1 mode)
+colorize_pango() {
     local text="$1"
     local color="$2"
     if [[ -n "$color" ]]; then
-        echo "%{F${color}}${text}%{F-}"
+        echo "<span foreground=\"${color}\">${text}</span>"
     else
         echo "$text"
     fi
@@ -72,18 +91,18 @@ colorize() {
 
 show_notification() {
     local summary
-    summary=$("$CLAUDE_USAGE_SH" -o summary)
+    summary=$("$CLAUDE_USAGE_SH" -o summary) || return 0
 
     if command -v notify-send &>/dev/null; then
-        notify-send -i "$NOTIFY_ICON" -t "$NOTIFY_TIMEOUT" "$NOTIFY_TITLE" "$summary"
+        notify-send -i "$NOTIFY_ICON" -t "$NOTIFY_TIMEOUT" "$NOTIFY_TITLE" "$summary" || true
     fi
 }
 
 # --- Main ---
 
-# Handle Polybar click events
-# BUTTON is set by Polybar: 1=left, 2=middle, 3=right, 4=scroll up, 5=scroll down
-case "${BUTTON:-}" in
+# Handle i3blocks click events
+# BLOCK_BUTTON is set by i3blocks: 1=left, 2=middle, 3=right, 4=scroll up, 5=scroll down
+case "${BLOCK_BUTTON:-}" in
     1|3)
         show_notification
         ;;
@@ -99,9 +118,19 @@ if [[ ! "$session" =~ ^[0-9]+%$ ]]; then
     exit 0
 fi
 
-# Colorize based on percentage
+# Get colors based on percentage
 session_color=$(get_color "$session")
 week_color=$(get_color "$week")
 
-# Output with icons and colors
-echo "🤖 $(colorize "$session" "$session_color") | 📅 $(colorize "$week" "$week_color")"
+# Output based on mode
+if [[ "${I3BLOCKS_PANGO:-}" == "1" ]]; then
+    # Pango mode: inline colors per value
+    echo "🤖 $(colorize_pango "$session" "$session_color") | 📅 $(colorize_pango "$week" "$week_color")"
+else
+    # Simple mode: plain text + color= line for worst color
+    echo "🤖 $session | 📅 $week"
+    worst_color=$(get_worst_color "$session_color" "$week_color")
+    if [[ -n "$worst_color" ]]; then
+        echo "color=$worst_color"
+    fi
+fi
