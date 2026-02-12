@@ -1,16 +1,14 @@
 name: CI
 
+# Trigger on PRs (any target branch) and pushes to main only.
+# This avoids duplicate runs when pushing to a branch with an open PR.
+# Workaround: open a draft PR to get CI on branches without a PR yet.
+# Note: using concurrency groups to cancel duplicates doesn't work well -
+# cancelled jobs clutter the UI and break integrations like CodeRabbit.
 on:
   push:
-  pull_request:
     branches: [main]
-
-# Deduplicate runs: push and pull_request events for the same branch
-# resolve to the same group, so only one runs. Also cancels outdated
-# runs when new commits are pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  pull_request:
 
 jobs:
   pre-commit:
