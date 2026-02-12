@@ -1,6 +1,6 @@
 # [Claude Usage Monitor](https://github.com/remigius42/claude-usage-monitor)
 
-<!-- spellchecker: words untap xbar -->
+<!-- spellchecker: words pango untap xbar -->
 <!-- spellchecker: ignore deje -->
 
 Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
@@ -143,6 +143,18 @@ usage without click support:
 ```ini
 exec = /path/to/claude-usage.sh -o format=" %session_num% |  %week_num%"
 ```
+
+**Linux i3blocks** - Add to `~/.config/i3blocks/config` (see
+[config-snippet.ini](plugins/i3blocks/config-snippet.ini) for full example):
+
+```ini
+[claude-usage]
+command=/path/to/plugins/i3blocks/claude-usage-i3blocks.sh
+interval=30
+```
+
+Left/right click shows a summary notification. For per-value colors like
+Polybar, set `I3BLOCKS_PANGO=1` and add `markup=pango` to your config.
 
 **Starship prompt** - Add to `starship.toml`:
 
