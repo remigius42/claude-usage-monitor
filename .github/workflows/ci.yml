@@ -5,6 +5,13 @@ on:
   pull_request:
     branches: [main]
 
+# Deduplicate runs: push and pull_request events for the same branch
+# resolve to the same group, so only one runs. Also cancels outdated
+# runs when new commits are pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
