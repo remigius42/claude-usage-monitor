@@ -193,6 +193,26 @@ EOF
 
 # --- Color Tests ---
 
+@test "0% session usage is displayed, not treated as loading/error" {
+    cat > "$CACHE_FILE" <<'EOF'
+SESSION_NUM="0"
+WEEK_NUM="10"
+SESSION_RESET="in 5 hours"
+WEEK_RESET="in 3 days"
+session_hours_remaining="5.0"
+week_hours_remaining="72.0"
+burn_rate_message=""
+FETCH_ERROR=""
+EOF
+    touch "$CACHE_FILE"
+
+    run "$WRAPPER"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"0%"* ]]
+    [[ "$output" == *"10%"* ]]
+    [[ "$output" == *"|"* ]]
+}
+
 @test "green color for usage < 50%" {
     cat > "$CACHE_FILE" <<'EOF'
 SESSION_NUM="25"
