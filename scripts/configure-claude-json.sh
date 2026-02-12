@@ -90,7 +90,7 @@ fi
 # Add or update the entry
 info "Updating ~/.claude.json..."
 jq --arg dir "$TRUST_DIR" \
-   '. + {($dir): {"hasTrustDialogAccepted": true}}' \
+   '. * {($dir): {"hasTrustDialogAccepted": true}}' \
    "$CLAUDE_JSON" > "${CLAUDE_JSON}.tmp"
 
 # Validate the JSON is still valid
