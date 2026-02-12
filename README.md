@@ -7,6 +7,7 @@ Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)
+[![CI](https://github.com/remigius42/claude-usage-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/remigius42/claude-usage-monitor/actions/workflows/ci.yml)
 
 > **Disclaimer:** This is an unofficial tool, not affiliated with or
 > endorsed by Anthropic. Claude is a trademark of Anthropic, PBC.
