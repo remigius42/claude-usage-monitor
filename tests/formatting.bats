@@ -374,6 +374,40 @@ Current week: 42% used"
     [ "$result" = "1:30pm" ]
 }
 
+@test "format_time BSD path sets LC_TIME=C for locale-proof am/pm" {
+    # SC2329 - mock function called by code under test
+    # shellcheck disable=SC2329
+    is_24h_format() { return 1; }
+    IS_BSD_DATE=true
+    # Mock epoch_to_date to capture LC_TIME environment and return test value
+    # SC2317 - "unreachable" for mock
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
+    epoch_to_date() { echo "LC_TIME=$LC_TIME OUTPUT=1:30PM"; }
+    export -f epoch_to_date
+    result=$(format_time 1734355800)
+    # Verify LC_TIME=C was set (captured by mock) and tr lowercased the output
+    [ "$result" = "lc_time=c output=1:30pm" ]
+}
+
+@test "format_time GNU path sets LC_TIME=C for locale-proof am/pm" {
+    # SC2329 - mock function called by code under test
+    # shellcheck disable=SC2329
+    is_24h_format() { return 1; }
+    # SC2034 - variable used by code under test
+    # shellcheck disable=SC2034
+    IS_BSD_DATE=false
+    # Mock epoch_to_date to capture LC_TIME environment
+    # SC2317 - "unreachable" for mock
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
+    epoch_to_date() { echo "LC_TIME=$LC_TIME"; }
+    export -f epoch_to_date
+    result=$(format_time 1734355800)
+    # Verify LC_TIME=C was set
+    [ "$result" = "LC_TIME=C" ]
+}
+
 @test "reformat_reset_time preserves time in 12h mode" {
     # Disable SC2329 - "This function is never invoked. Check usage (or ignored if invoked indirectly)" for mocks
     # shellcheck disable=SC2329

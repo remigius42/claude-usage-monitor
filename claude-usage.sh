@@ -262,7 +262,8 @@ format_time() {
     if is_24h_format; then
         epoch_to_date "$epoch" '%H:%M'
     elif [[ "$IS_BSD_DATE" == true ]]; then
-        epoch_to_date "$epoch" '%-I:%M%p' | tr '[:upper:]' '[:lower:]'
+        # LC_TIME=C: am/pm requires English locale
+        LC_TIME=C epoch_to_date "$epoch" '%-I:%M%p' | tr '[:upper:]' '[:lower:]'
     else
         # LC_TIME=C: am/pm requires English locale
         # %P: GNU coreutils >=9.9 errors on %p; %P gives lowercase am/pm
