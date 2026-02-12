@@ -72,10 +72,10 @@ colorize() {
 
 show_notification() {
     local summary
-    summary=$("$CLAUDE_USAGE_SH" -o summary)
+    summary=$("$CLAUDE_USAGE_SH" -o summary) || return 0
 
     if command -v notify-send &>/dev/null; then
-        notify-send -i "$NOTIFY_ICON" -t "$NOTIFY_TIMEOUT" "$NOTIFY_TITLE" "$summary"
+        notify-send -i "$NOTIFY_ICON" -t "$NOTIFY_TIMEOUT" "$NOTIFY_TITLE" "$summary" || true
     fi
 }
 
