@@ -40,7 +40,7 @@ npm install -g bats
 **Arch Linux:**
 
 ```bash
-sudo pacman -S tmux jq python-pre-commit bash-bats
+sudo pacman -S tmux jq python-pre-commit bats
 ```
 
 > **Note:** ShellCheck is installed via pre-commit, but having it locally
