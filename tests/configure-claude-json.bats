@@ -8,7 +8,7 @@ bats_require_minimum_version 1.5.0
 # Run with: bats tests/configure-claude-json.bats
 
 setup() {
-    TEST_JSON="$(mktemp)"
+    TEST_JSON="$(mktemp "${TMPDIR:-/tmp}/configure-claude-json-test.XXXXXX")"
 }
 
 teardown() {
