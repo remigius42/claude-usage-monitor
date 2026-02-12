@@ -261,8 +261,12 @@ format_time() {
 
     if is_24h_format; then
         epoch_to_date "$epoch" '%H:%M'
-    else
+    elif [[ "$IS_BSD_DATE" == true ]]; then
         epoch_to_date "$epoch" '%-I:%M%p' | tr '[:upper:]' '[:lower:]'
+    else
+        # LC_TIME=C: am/pm requires English locale
+        # %P: GNU coreutils >=9.9 errors on %p; %P gives lowercase am/pm
+        LC_TIME=C epoch_to_date "$epoch" '%-I:%M%P'
     fi
 }
 
@@ -281,7 +285,8 @@ reformat_reset_time() {
     fi
 
     if [[ "$reset_str" =~ ^[A-Z][a-z]+[[:space:]][0-9]+ ]]; then
-        echo "$(epoch_to_date "$reset_epoch" '%b %d'), $(epoch_to_date "$reset_epoch" '%H:%M')"
+        # LC_TIME=C: month abbreviation must be English to match Claude CLI output
+        echo "$(LC_TIME=C epoch_to_date "$reset_epoch" '%b %d'), $(epoch_to_date "$reset_epoch" '%H:%M')"
     else
         epoch_to_date "$reset_epoch" '%H:%M'
     fi
