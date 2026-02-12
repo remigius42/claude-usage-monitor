@@ -20,6 +20,10 @@ Claude Usage Monitor displays your Claude API usage in your menu bar
 session and weekly usage percentages with color-coded indicators and
 reset countdowns.
 
+> **Note:** Context window usage (Ctx: %) is only available in the Claude
+> Code CLI statusline (`-o claude`), where the CLI provides its own
+> session data.
+
 ### Why This Approach
 
 The Claude CLI doesn't expose usage data via API for subscription plans,
@@ -35,7 +39,11 @@ non-interactively:
 5. Sends `/clear` to clean up
 
 This approach enables integration with menu bars and status lines that
-need to poll for data periodically.
+need to poll for data periodically. Since the tmux session runs an
+isolated Claude instance, its context window usage reflects its own
+conversation — not the user's active session(s). The Claude Code CLI
+statusline receives context data directly from the running session via
+stdin, which is why it's the only format that can display it.
 
 ### Output Examples
 
