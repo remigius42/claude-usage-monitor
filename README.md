@@ -8,6 +8,7 @@ Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey.svg)
 [![CI](https://github.com/remigius42/claude-usage-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/remigius42/claude-usage-monitor/actions/workflows/ci.yml)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/remigius42/claude-usage-monitor?utm_source=oss&utm_medium=github&utm_campaign=remigius42%2Fclaude-usage-monitor&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 > **Disclaimer:** This is an unofficial tool, not affiliated with or
 > endorsed by Anthropic. Claude is a trademark of Anthropic, PBC.
