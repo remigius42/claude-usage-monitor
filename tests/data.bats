@@ -692,9 +692,9 @@ EOF
     rm -f "$CACHE_FILE"
 }
 
-# --- has_valid_recent_cache ---
+# --- has_valid_cache ---
 
-@test "has_valid_recent_cache returns true for fresh cache with data" {
+@test "has_valid_cache returns true for fresh cache with data" {
     rm -f "$CACHE_FILE"
     cat > "$CACHE_FILE" <<'EOF'
 SESSION_NUM="50"
@@ -703,12 +703,12 @@ FETCH_ERROR=""
 EOF
     touch "$CACHE_FILE"
 
-    has_valid_recent_cache
+    has_valid_cache
 
     rm -f "$CACHE_FILE"
 }
 
-@test "has_valid_recent_cache returns false for error-only cache" {
+@test "has_valid_cache returns false for error-only cache" {
     rm -f "$CACHE_FILE"
     cat > "$CACHE_FILE" <<'EOF'
 SESSION_NUM=""
@@ -717,13 +717,13 @@ FETCH_ERROR="Claude CLI not available"
 EOF
     touch "$CACHE_FILE"
 
-    run ! has_valid_recent_cache
+    run ! has_valid_cache
     [ "$status" -ne 0 ]
 
     rm -f "$CACHE_FILE"
 }
 
-@test "has_valid_recent_cache returns false for very old cache" {
+@test "has_valid_cache returns true for very old cache with data" {
     rm -f "$CACHE_FILE"
     cat > "$CACHE_FILE" <<'EOF'
 SESSION_NUM="50"
@@ -732,20 +732,20 @@ FETCH_ERROR=""
 EOF
     touch -t 202001010000 "$CACHE_FILE"
 
-    run ! has_valid_recent_cache
-    [ "$status" -ne 0 ]
+    # Old-but-valid data is preserved on fetch failure (no time limit)
+    has_valid_cache
 
     rm -f "$CACHE_FILE"
 }
 
-@test "has_valid_recent_cache returns false when no cache exists" {
+@test "has_valid_cache returns false when no cache exists" {
     rm -f "$CACHE_FILE"
 
-    run ! has_valid_recent_cache
+    run ! has_valid_cache
     [ "$status" -ne 0 ]
 }
 
-@test "has_valid_recent_cache returns true even when session reset time has passed" {
+@test "has_valid_cache returns true even when session reset time has passed" {
     rm -f "$CACHE_FILE"
     local past_epoch=$(($(date +%s) - 60))  # 1 minute ago
     cat > "$CACHE_FILE" <<EOF
@@ -757,12 +757,12 @@ EOF
     touch "$CACHE_FILE"
 
     # Prefers stale data over error states
-    has_valid_recent_cache
+    has_valid_cache
 
     rm -f "$CACHE_FILE"
 }
 
-@test "has_valid_recent_cache returns true when session reset time is in future" {
+@test "has_valid_cache returns true when session reset time is in future" {
     rm -f "$CACHE_FILE"
     local future_epoch=$(($(date +%s) + 3600))  # 1 hour from now
     cat > "$CACHE_FILE" <<EOF
@@ -773,7 +773,64 @@ FETCH_ERROR=""
 EOF
     touch "$CACHE_FILE"
 
-    has_valid_recent_cache
+    has_valid_cache
+
+    rm -f "$CACHE_FILE"
+}
+
+# --- load_last_history_entry ---
+
+@test "load_last_history_entry reads SESSION_NUM and WEEK_NUM from last line" {
+    echo "timestamp,session_pct,week_pct" > "$HISTORY_FILE"
+    echo "1000000000,30,12" >> "$HISTORY_FILE"
+    echo "1000000030,45,18" >> "$HISTORY_FILE"
+
+    load_last_history_entry
+
+    # SC2031 - set by load_last_history_entry (bats test)
+    # shellcheck disable=SC2031
+    [ "$SESSION_NUM" = "45" ]
+    # shellcheck disable=SC2031
+    [ "$WEEK_NUM" = "18" ]
+
+    rm -f "$HISTORY_FILE"
+}
+
+@test "load_last_history_entry returns false when history file absent" {
+    rm -f "$HISTORY_FILE"
+
+    run ! load_last_history_entry
+    [ "$status" -ne 0 ]
+}
+
+@test "load_last_history_entry returns false for empty history file" {
+    echo "" > "$HISTORY_FILE"
+
+    run ! load_last_history_entry
+    [ "$status" -ne 0 ]
+
+    rm -f "$HISTORY_FILE"
+}
+
+# --- save_stale_cache ---
+
+# SC2030 - subshell-local assignment is intentional (bats test)
+# shellcheck disable=SC2030
+@test "save_stale_cache writes SESSION_NUM and WEEK_NUM with FETCH_ERROR set" {
+    rm -f "$CACHE_FILE"
+    SESSION_NUM="42"
+    WEEK_NUM="17"
+
+    save_stale_cache "network timeout"
+
+    # SC1090 - "non-constant source" file created by test
+    # shellcheck disable=SC1090
+    source "$CACHE_FILE"
+    [ "$SESSION_NUM" = "42" ]
+    [ "$WEEK_NUM" = "17" ]
+    # SC2031 - set by source above (bats test)
+    # shellcheck disable=SC2031
+    [ "$FETCH_ERROR" = "network timeout" ]
 
     rm -f "$CACHE_FILE"
 }

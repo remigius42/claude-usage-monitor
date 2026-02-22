@@ -1107,16 +1107,45 @@ EOF
     mv "$tmp_cache" "$CACHE_FILE"
 }
 
-# Check if cache has valid usage data and is not excessively stale.
+# Check if cache has valid usage data (any age).
 # Used to decide whether to preserve old data on fetch failure.
-# Prefers stale data over error states.
-has_valid_recent_cache() {
+# Prefers stale data over error states — showing an old percentage is
+# better than showing N/A during prolonged network outages.
+has_valid_cache() {
     [[ -f "$CACHE_FILE" ]] || return 1
     grep -q 'SESSION_NUM="[0-9]' "$CACHE_FILE" 2>/dev/null || return 1
-    local cache_mtime cache_age
-    cache_mtime=$(file_mtime "$CACHE_FILE") || return 1
-    cache_age=$(($(date +%s) - cache_mtime))
-    [[ "$cache_age" -lt $((CACHE_DURATION * 3)) ]]  # Grace period: 3x cache TTL
+}
+
+# Load the last entry from the history file into SESSION_NUM / WEEK_NUM globals.
+# Used as a last-resort fallback when the fetch fails and no valid cache exists.
+load_last_history_entry() {
+    [[ -f "$HISTORY_FILE" ]] || return 1
+    local last_line
+    last_line=$(tail -n 1 "$HISTORY_FILE") || return 1
+    [[ -n "$last_line" ]] || return 1
+    SESSION_NUM=$(echo "$last_line" | cut -d',' -f2)
+    WEEK_NUM=$(echo "$last_line" | cut -d',' -f3)
+    [[ -n "$SESSION_NUM" ]] && [[ -n "$WEEK_NUM" ]]
+}
+
+# Save real usage values to cache but keep FETCH_ERROR set so background
+# retries continue until a fresh fetch succeeds.
+save_stale_cache() {
+    local error_msg="$1"
+    local tmp_cache="${CACHE_FILE}.tmp.$$"
+    cat > "$tmp_cache" <<EOF
+SESSION_NUM="$SESSION_NUM"
+WEEK_NUM="$WEEK_NUM"
+SESSION_RESET=""
+WEEK_RESET=""
+SESSION_RESET_EPOCH=""
+burn_rate_message=""
+exhaustion_epoch=""
+session_hours_remaining=""
+week_hours_remaining=""
+FETCH_ERROR="$error_msg"
+EOF
+    mv "$tmp_cache" "$CACHE_FILE"
 }
 
 # Trigger background cache refresh if not already running
@@ -1451,8 +1480,11 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null
 if [[ "${1:-}" == "--refresh-cache" ]]; then
     if acquire_lock; then
         if ! fetch_usage_data; then
-            if has_valid_recent_cache; then
-                debug_log "Fetch failed but valid recent cache exists - preserving"
+            if has_valid_cache; then
+                debug_log "Fetch failed but valid cache exists - preserving"
+            elif load_last_history_entry; then
+                debug_log "Fetch failed, no valid cache - using last history entry"
+                save_stale_cache "${FETCH_ERROR:-Unknown fetch error}"
             else
                 save_error_cache "${FETCH_ERROR:-Unknown fetch error}"
             fi
