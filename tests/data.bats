@@ -778,6 +778,44 @@ EOF
     rm -f "$CACHE_FILE"
 }
 
+# --- watchdog_should_restart ---
+
+@test "watchdog_should_restart returns false when cache is fresh" {
+    rm -f "$CACHE_FILE"
+    cat > "$CACHE_FILE" <<'EOF'
+SESSION_NUM="50"
+WEEK_NUM="25"
+FETCH_ERROR=""
+EOF
+    touch "$CACHE_FILE"
+
+    run ! watchdog_should_restart
+    [ "$status" -ne 0 ]
+
+    rm -f "$CACHE_FILE"
+}
+
+@test "watchdog_should_restart returns true when cache is older than WATCHDOG_TIMEOUT" {
+    rm -f "$CACHE_FILE"
+    cat > "$CACHE_FILE" <<'EOF'
+SESSION_NUM="50"
+WEEK_NUM="25"
+FETCH_ERROR=""
+EOF
+    touch -t 202001010000 "$CACHE_FILE"
+
+    watchdog_should_restart
+
+    rm -f "$CACHE_FILE"
+}
+
+@test "watchdog_should_restart returns false when no cache exists" {
+    rm -f "$CACHE_FILE"
+
+    run ! watchdog_should_restart
+    [ "$status" -ne 0 ]
+}
+
 # --- load_last_history_entry ---
 
 @test "load_last_history_entry reads SESSION_NUM and WEEK_NUM from last line" {

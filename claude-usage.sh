@@ -27,7 +27,8 @@ set -euo pipefail
 readonly SESSION_NAME="claude-usage-monitor"
 readonly _RUNTIME_DIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}"
 readonly CACHE_FILE="$_RUNTIME_DIR/claude-usage-monitor-cache-$USER.txt"
-readonly CACHE_DURATION=30  # 30 seconds
+readonly CACHE_DURATION=30      # 30 seconds
+readonly WATCHDOG_TIMEOUT=300   # seconds without a successful fetch before restarting the tmux session
 readonly HISTORY_FILE="/tmp/claude-usage-monitor-history-$USER.csv"
 readonly DEBUG_LOG="/tmp/claude-usage-monitor-debug-$USER.log"
 readonly BURN_RATE_SAMPLES=10  # Number of recent samples for burn rate calculation
@@ -1116,6 +1117,17 @@ has_valid_cache() {
     grep -q 'SESSION_NUM="[0-9]' "$CACHE_FILE" 2>/dev/null || return 1
 }
 
+# Return true if the cache hasn't been successfully updated within WATCHDOG_TIMEOUT seconds,
+# suggesting the tmux session is stuck. Uses cache mtime as proxy for last successful fetch —
+# safe because has_valid_cache() preserves the cache on failure without rewriting it.
+watchdog_should_restart() {
+    [[ -f "$CACHE_FILE" ]] || return 1  # No cache yet — nothing to compare
+    local cache_mtime cache_age
+    cache_mtime=$(file_mtime "$CACHE_FILE") || return 1
+    cache_age=$(( $(date +%s) - cache_mtime ))
+    [[ "$cache_age" -gt "$WATCHDOG_TIMEOUT" ]]
+}
+
 # Load the last entry from the history file into SESSION_NUM / WEEK_NUM globals.
 # Used as a last-resort fallback when the fetch fails and no valid cache exists.
 load_last_history_entry() {
@@ -1479,6 +1491,10 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null
 # Background cache refresh mode (spawned by maybe_trigger_background_refresh)
 if [[ "${1:-}" == "--refresh-cache" ]]; then
     if acquire_lock; then
+        if watchdog_should_restart; then
+            debug_log "Watchdog: no successful fetch in ${WATCHDOG_TIMEOUT}s — restarting tmux session"
+            tmux kill-session -t "$SESSION_NAME" 2>/dev/null || true
+        fi
         if ! fetch_usage_data; then
             if has_valid_cache; then
                 debug_log "Fetch failed but valid cache exists - preserving"
