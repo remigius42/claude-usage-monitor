@@ -898,13 +898,13 @@ handle_stale_state() {
 # Parse session percentage from captured output
 parse_session_pct() {
     local output="$1"
-    echo "$output" | grep -oE '[0-9]+%' | sed -n '1p' | grep -oE '[0-9]+' || true
+    echo "$output" | grep "Current session" -A 2 | grep -oE '[0-9]+%' | head -1 | grep -oE '[0-9]+' || true
 }
 
 # Parse week percentage from captured output
 parse_week_pct() {
     local output="$1"
-    echo "$output" | grep -oE '[0-9]+%' | sed -n '2p' | grep -oE '[0-9]+' || true
+    echo "$output" | grep "Current week" -A 2 | grep -oE '[0-9]+%' | head -1 | grep -oE '[0-9]+' || true
 }
 
 # Parse session reset time from captured output
@@ -967,6 +967,10 @@ fetch_usage_data() {
     # Clear conversation to get clean capture for /usage
     clear_session
     sleep 2  # Wait for /clear to complete
+
+    # Clear tmux scrollback so capture only sees current /usage output,
+    # not stale output from previous fetches.
+    tmux clear-history -t "$SESSION_NAME" 2>/dev/null || true
 
     if ! tmux send-keys -t "$SESSION_NAME" "/usage" Escape 2>/dev/null; then
         FETCH_ERROR="tmux send-keys failed"

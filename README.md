@@ -36,9 +36,10 @@ non-interactively:
 
 1. Sends `/context` to prevent `/usage` from getting stuck
 2. Sends `/clear` to ensure clean terminal state
-3. Sends `/usage` and captures the pane output
-4. Parses percentages and reset times with grep/sed
-5. Sends `/clear` to clean up
+3. Clears the tmux scrollback buffer to prevent stale output from polluting the capture
+4. Sends `/usage` and captures the pane output
+5. Parses percentages and reset times with grep/sed, anchored to the relevant output sections
+6. Sends `/clear` to clean up
 
 This approach enables integration with menu bars and status lines that
 need to poll for data periodically. Since the tmux session runs an
