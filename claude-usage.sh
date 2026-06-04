@@ -989,6 +989,12 @@ fetch_usage_data() {
 
     clear_session
 
+    if echo "$capture" | grep -q "Failed to load usage data"; then
+        FETCH_ERROR="Failed to load usage data (upstream API error)"
+        debug_log "ERROR: $FETCH_ERROR"
+        return 1
+    fi
+
     SESSION_NUM=$(parse_session_pct "$capture")
     WEEK_NUM=$(parse_week_pct "$capture")
     SESSION_RESET=$(parse_session_reset "$capture")

@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+# spellchecker:ignore esac
+
 bats_require_minimum_version 1.5.0
 
 # Data layer tests: caching, locking, burn rate, error handling
@@ -169,6 +171,9 @@ Current week: 50% of messages
 }
 
 @test "calculate_week_hours_remaining leaves value empty without bc" {
+    # SC2317 - "unreachable" for mock
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
     command() {
         if [[ "$1" == "-v" ]] && [[ "$2" == "bc" ]]; then
             return 1
@@ -553,6 +558,45 @@ EOF
     echo "$func_body" | grep -q 'return 1'
 }
 
+@test "fetch_usage_data fails when capture contains usage load error alongside stale values" {
+    # Regression: /usage error dialog shows stale percentages + error message.
+    # Parser would find stale numbers and treat them as fresh — masking the error.
+    command() {
+        if [[ "$1" == "-v" ]]; then return 0; fi
+        builtin command "$@"
+    }
+    # SC2317 - "unreachable" for mock
+    # shellcheck disable=SC2317
+    sleep() { :; }
+    handle_stale_state() { :; }
+    clear_session() { :; }
+    tmux() {
+        case "$1" in
+            new-session)   return 1 ;;
+            send-keys)     return 0 ;;
+            clear-history) return 0 ;;
+            capture-pane)
+                printf '%s\n' \
+                    "Current session: 45% of messages" \
+                    "  Resets 11:59pm (in 2 hours)" \
+                    "Current week: 67% of messages" \
+                    "  Resets Dec 23, 8:59pm (in 3 days)" \
+                    "" \
+                    "  Error: Failed to load usage data" \
+                    "" \
+                    "  r to retry · Esc to cancel"
+                ;;
+        esac
+    }
+
+    # SC2030 - subshell-local assignment is intentional (bats test)
+    # shellcheck disable=SC2030
+    FETCH_ERROR=""
+    fetch_usage_data && fetch_result=0 || fetch_result=$?
+    [ "$fetch_result" -ne 0 ]
+    [ -n "$FETCH_ERROR" ]
+}
+
 @test "fetch_usage_data sets specific FETCH_ERROR before each return 1" {
     local func_body
     func_body=$(sed -n '/^fetch_usage_data()/,/^}/p' "$PROJECT_DIR/claude-usage.sh")
@@ -587,8 +631,9 @@ EOF
     # SC1090 - "non-constant source" file created by test
     # shellcheck disable=SC1090
     source "$CACHE_FILE"
-    [ "$FETCH_ERROR" = "Test error message" ]
     # SC2031 - set by source above (bats test)
+    # shellcheck disable=SC2031
+    [ "$FETCH_ERROR" = "Test error message" ]
     # shellcheck disable=SC2031
     [ -z "$SESSION_NUM" ]
 
@@ -605,6 +650,8 @@ EOF
     touch "$CACHE_FILE"
 
     try_load_cache
+    # SC2031 - set by try_load_cache via source (bats test)
+    # shellcheck disable=SC2031
     [ "$FETCH_ERROR" = "Claude CLI not available" ]
 
     rm -f "$CACHE_FILE"

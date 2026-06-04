@@ -13,6 +13,18 @@ Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
 > **Disclaimer:** This is an unofficial tool, not affiliated with or
 > endorsed by Anthropic. Claude is a trademark of Anthropic, PBC.
 
+<!-- -->
+
+> **Stability note:** All output formats except `-o claude` rely on
+> scraping the `/usage` command via tmux. The upstream `/usage` API
+> endpoint is currently unreliable and frequently returns
+> "Failed to load usage data" errors
+> ([#8473](https://github.com/anthropics/claude-code/issues/8473),
+> [#32503](https://github.com/anthropics/claude-code/issues/32503)).
+> Expect intermittent stale data until Anthropic resolves this upstream.
+> The `-o claude` statusline format is unaffected as it reads data
+> directly from the running session.
+
 ---
 
 ## What It Does
