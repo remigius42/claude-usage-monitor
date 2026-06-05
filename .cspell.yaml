@@ -5,6 +5,7 @@ words:
   - commitlint
   - coreutils
   - inplace
+  - keepalive
   - nohup
   - pacman
   - pango
