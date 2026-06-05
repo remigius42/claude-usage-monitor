@@ -37,6 +37,11 @@ readonly MAX_HISTORY_ENTRIES=120  # Max history rows to retain (~1 hour at 30s)
 # Time format preference (modifiable by sed in-place for SwiftBar)
 readonly USE_24H_FORMAT=true
 
+# Set to a short prompt (e.g. "1") to send a real message before /usage each cycle.
+# This works around an upstream API issue where /usage fails unless a real LLM
+# round-trip has occurred recently. Leave empty to disable (opt-in, costs tokens).
+KEEPALIVE_PROMPT=""
+
 # --- Global State ---
 OUTPUT_FORMAT=""
 OUTPUT_FORMAT_STRING=""
@@ -947,7 +952,7 @@ fetch_usage_data() {
         return 1
     fi
 
-    if tmux new-session -d -s "$SESSION_NAME" "claude" 2>/dev/null; then
+    if tmux new-session -d -s "$SESSION_NAME" "claude --model haiku" 2>/dev/null; then
         sleep 10
     fi
 
@@ -964,6 +969,15 @@ fetch_usage_data() {
     sleep 3  # Wait for /context to register (unstick workaround)
     tmux send-keys -t "$SESSION_NAME" Escape 2>/dev/null  # Dismiss /context
     sleep 1
+
+    # Optional keepalive: send a real prompt to unblock /usage API errors.
+    # Requires KEEPALIVE_PROMPT to be set (opt-in — costs tokens).
+    if [[ -n "${KEEPALIVE_PROMPT:-}" ]]; then
+        tmux send-keys -t "$SESSION_NAME" "$KEEPALIVE_PROMPT" 2>/dev/null
+        sleep 1
+        tmux send-keys -t "$SESSION_NAME" Enter 2>/dev/null
+        sleep 5  # Wait for LLM response
+    fi
 
     # Clear conversation to get clean capture for /usage
     clear_session

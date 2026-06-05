@@ -26,3 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform installation instructions (macOS, Debian/Ubuntu, Fedora/RHEL, Arch)
 - Pre-commit hooks for code quality (ShellCheck, markdownlint, cspell, gitleaks)
 - Bats test suite for unit testing (CLI, formatting, data, and output-specific tests)
+- `KEEPALIVE_PROMPT` config option: set to a short string (e.g. `"1"`) to send a
+  real LLM round-trip before each `/usage` call, working around an upstream API
+  issue where `/usage` fails unless recent conversation activity exists. Opt-in,
+  defaults to empty. Uses `claude --model haiku` to keep token cost low.

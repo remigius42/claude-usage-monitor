@@ -561,15 +561,21 @@ EOF
 @test "fetch_usage_data fails when capture contains usage load error alongside stale values" {
     # Regression: /usage error dialog shows stale percentages + error message.
     # Parser would find stale numbers and treat them as fresh — masking the error.
+    # SC2329 - "unused function" for mock (invoked indirectly by fetch_usage_data)
+    # shellcheck disable=SC2329
     command() {
         if [[ "$1" == "-v" ]]; then return 0; fi
         builtin command "$@"
     }
     # SC2317 - "unreachable" for mock
-    # shellcheck disable=SC2317
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
     sleep() { :; }
+    # shellcheck disable=SC2329
     handle_stale_state() { :; }
+    # shellcheck disable=SC2329
     clear_session() { :; }
+    # shellcheck disable=SC2329
     tmux() {
         case "$1" in
             new-session)   return 1 ;;
@@ -595,6 +601,99 @@ EOF
     fetch_usage_data && fetch_result=0 || fetch_result=$?
     [ "$fetch_result" -ne 0 ]
     [ -n "$FETCH_ERROR" ]
+}
+
+@test "fetch_usage_data sends KEEPALIVE_PROMPT to tmux before /usage when set" {
+    # SC2329 - "unused function" for mock (invoked indirectly by fetch_usage_data)
+    # shellcheck disable=SC2329
+    command() { if [[ "$1" == "-v" ]]; then return 0; fi; builtin command "$@"; }
+    # SC2317 - "unreachable" for mock
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
+    sleep() { :; }
+    # shellcheck disable=SC2329
+    handle_stale_state() { :; }
+    # shellcheck disable=SC2329
+    clear_session() { :; }
+
+    local sent_keys=()
+    # shellcheck disable=SC2329
+    tmux() {
+        case "$1" in
+            new-session)   return 1 ;;
+            clear-history) return 0 ;;
+            send-keys)     sent_keys+=("$4") ;;
+            capture-pane)
+                printf '%s\n' \
+                    "Current session: 45% of messages" \
+                    "  Resets 11:59pm (in 2 hours)" \
+                    "Current week: 67% of messages" \
+                    "  Resets Dec 23, 8:59pm (in 3 days)"
+                ;;
+        esac
+    }
+
+    KEEPALIVE_PROMPT="1"
+    fetch_usage_data && fetch_result=0 || fetch_result=$?
+
+    # "1" must appear in sent keys before "/usage"
+    local found_prompt=false prompt_before_usage=false
+    for key in "${sent_keys[@]}"; do
+        [[ "$key" == "1" ]] && found_prompt=true
+        if [[ "$key" == "/usage" ]]; then
+            [[ "$found_prompt" == true ]] && prompt_before_usage=true
+        fi
+    done
+    [ "$prompt_before_usage" = true ]
+}
+
+@test "fetch_usage_data skips keepalive when KEEPALIVE_PROMPT is empty" {
+    # SC2329 - "unused function" for mock (invoked indirectly by fetch_usage_data)
+    # shellcheck disable=SC2329
+    command() { if [[ "$1" == "-v" ]]; then return 0; fi; builtin command "$@"; }
+    # SC2317 - "unreachable" for mock
+    # SC2329 - "unused function" for mock
+    # shellcheck disable=SC2317,SC2329
+    sleep() { :; }
+    # shellcheck disable=SC2329
+    handle_stale_state() { :; }
+    # shellcheck disable=SC2329
+    clear_session() { :; }
+
+    local sent_keys=()
+    # shellcheck disable=SC2329
+    tmux() {
+        case "$1" in
+            new-session)   return 1 ;;
+            clear-history) return 0 ;;
+            send-keys)     sent_keys+=("$4") ;;
+            capture-pane)
+                printf '%s\n' \
+                    "Current session: 45% of messages" \
+                    "  Resets 11:59pm (in 2 hours)" \
+                    "Current week: 67% of messages" \
+                    "  Resets Dec 23, 8:59pm (in 3 days)"
+                ;;
+        esac
+    }
+
+    # SC2034 - consumed indirectly by fetch_usage_data via ${KEEPALIVE_PROMPT:-}
+    # shellcheck disable=SC2034
+    KEEPALIVE_PROMPT=""
+    fetch_usage_data && true || true
+
+    # Only slash-commands, Enter, Escape should be sent — no user content
+    for key in "${sent_keys[@]}"; do
+        [[ "$key" == /* || "$key" == "Enter" || "$key" == "Escape" || "$key" == "" ]] && continue
+        fail "unexpected non-command key sent: $key"
+    done
+}
+
+@test "KEEPALIVE_PROMPT defaults to empty string" {
+    local result
+    result=$(env -i HOME="$HOME" USER="$USER" PATH="$PATH" \
+        bash -c "source '$PROJECT_DIR/claude-usage.sh' --source-only && echo \"KEEPALIVE_PROMPT='\$KEEPALIVE_PROMPT'\"")
+    [[ "$result" == "KEEPALIVE_PROMPT=''" ]]
 }
 
 @test "fetch_usage_data sets specific FETCH_ERROR before each return 1" {

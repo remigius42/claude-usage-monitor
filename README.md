@@ -22,6 +22,8 @@ Copyright 2026 [Andreas Remigius Schmidt](https://github.com/remigius42)
 > ([#8473](https://github.com/anthropics/claude-code/issues/8473),
 > [#32503](https://github.com/anthropics/claude-code/issues/32503)).
 > Expect intermittent stale data until Anthropic resolves this upstream.
+> As a workaround, set `KEEPALIVE_PROMPT="1"` in `claude-usage.sh` — see
+> [Customization](#customization) for details.
 > The `-o claude` statusline format is unaffected as it reads data
 > directly from the running session.
 
@@ -218,6 +220,16 @@ claude-usage.sh -o format="Usage: %session_num%{? - %projected_expiration%?}"
 **Polybar interval** - Edit `interval` in your config (seconds, default 30).
 
 **Color thresholds** - Green < 50%, orange < 80%, red >= 80%.
+
+**Keepalive prompt** - The upstream `/usage` API can fail unless a real LLM
+round-trip has occurred recently. Set `KEEPALIVE_PROMPT` in the script to a
+short string to send a minimal prompt before each `/usage` call:
+
+```bash
+KEEPALIVE_PROMPT="1"   # opt-in — costs tokens (uses haiku to keep burn low)
+```
+
+Leave empty (default) to disable.
 
 ### Troubleshooting
 
