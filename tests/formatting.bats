@@ -48,6 +48,18 @@ Current week: 42% used"
     [[ "$result" == *"3 days"* ]]
 }
 
+@test "parse_week_reset uses only first week block when per-model blocks follow" {
+    local mock_output="Current week (all models)
+   ████                   64% used
+   Resets Oct 14, 4:59am (Europe/Zurich)
+
+   Current week (Fable)
+                          0% used
+   Resets Oct 14, 5am (Europe/Zurich)"
+    result=$(parse_week_reset "$mock_output")
+    [ "$result" = "Oct 14, 4:59am" ]
+}
+
 @test "parse_reset_time parses time-only 5pm" {
     parse_reset_time "5pm"
     [ -n "$reset_epoch" ]

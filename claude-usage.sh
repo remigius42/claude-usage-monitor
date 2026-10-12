@@ -842,7 +842,7 @@ calculate_week_hours_remaining() {
     week_hours_remaining=""
 
     local reset_str
-    reset_str=$(echo "$capture" | grep "Current week" -A 2 | grep "Resets" | sed -E 's/.*Resets[: ]+([^(]+).*/\1/' | xargs)
+    reset_str=$(parse_week_reset "$capture")
     debug_log "week_reset_str='$reset_str'"
 
     if ! parse_reset_time "$reset_str"; then
@@ -922,7 +922,7 @@ parse_session_reset() {
 # Parse week reset time from captured output
 parse_week_reset() {
     local output="$1"
-    echo "$output" | grep "Current week" -A 2 | grep "Resets" | sed -E 's/.*Resets[: ]+([^(]+).*/\1/' | xargs || true
+    echo "$output" | grep -m1 "Current week" -A 2 | grep "Resets" | sed -E 's/.*Resets[: ]+([^(]+).*/\1/' | xargs || true
 }
 
 # Format reset time to compact form (e.g., "in 2 hours" -> "2h")
@@ -952,7 +952,7 @@ fetch_usage_data() {
         return 1
     fi
 
-    if tmux new-session -d -s "$SESSION_NAME" "claude --model haiku" 2>/dev/null; then
+    if tmux new-session -d -s "$SESSION_NAME" -x 120 -y 80 "claude --model haiku" 2>/dev/null; then
         sleep 10
     fi
 
